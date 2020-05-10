@@ -9,11 +9,11 @@ namespace TSELoadCSV
 {
     public class LoadTSE
     {
-        static String[][] ReadCSV(Int32 ano, String uf, String arq)
+        static String[][] ReadCSV(Int32 ano, String uf, String arq, String path)
         {
             List<String[]> campos = new List<String[]>();
 
-            String arquivo = String.Format(@"C:\Users\Paulo\Documents\Pessoal\Projeto QMR\Eleições {0}\{2}_{0}\{2}_{0}_{1}.txt", ano, uf, arq);
+            String arquivo = String.Format(path, ano, uf, arq);
 
             try
             {
@@ -86,9 +86,9 @@ namespace TSELoadCSV
             return result;
         }
 
-        public static Int32 LoadCSV<Type>(Int32 ano, String uf, String arquivo, IEnumerable<TSEMapper> map)
+        public static Int32 LoadCSV<Type>(Int32 ano, String uf, String arquivo, IEnumerable<TSEMapper> map, String path)
         {
-            String[][] campos = ReadCSV(2016, uf, arquivo);
+            String[][] campos = ReadCSV(2016, uf, arquivo, path);
             Console.WriteLine(String.Format("{0}: {1:#,#}", uf, campos.Length));
 
             foreach (String[] cmps in campos)

@@ -28,11 +28,13 @@ namespace LoadCSV
             Int32 totCands = 0;
             Int32 totBens = 0;
 
+            String path = @"C:\Users\Paulo\Documents\Pessoal\Projeto QMR\Eleições {0}\{2}_{0}\{2}_{0}_{1}.txt";
+
             //foreach (String uf in new String[] { "AC" })
             foreach (String uf in ufs)
             {
-                totCands += LoadTSE.LoadCSV<Candidato>(2016, uf, "consulta_cand", maps.CandidatoMap);
-                totBens += LoadTSE.LoadCSV<BensCandidato>(2016, uf, "bem_candidato", maps.BensCandidatoMap);
+                totCands += LoadTSE.LoadCSV<Candidato>(2016, uf, "consulta_cand", maps.CandidatoMap, path);
+                totBens += LoadTSE.LoadCSV<BensCandidato>(2016, uf, "bem_candidato", maps.BensCandidatoMap, path);
             }
 
             Console.WriteLine("Total de Candidatos: {0}", totCands.ToString("#,#"));
