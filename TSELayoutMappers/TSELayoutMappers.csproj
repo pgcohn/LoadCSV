@@ -44,5 +44,11 @@
     <Compile Include="LayoutMappers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TSEdb\TSEdb.csproj">
+      <Project>{8eec6e2b-2690-4180-a73f-7e6be63f8c92}</Project>
+      <Name>TSEdb</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

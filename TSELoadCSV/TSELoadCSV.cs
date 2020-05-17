@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
-
+using TSEdb;
 using TSELayoutMappers;
 
 namespace TSELoadCSV
 {
     public class LoadTSE
     {
-        static String[][] ReadCSV(Int32 ano, String uf, String arq, String path)
+        public static String[][] ReadCSV(Int32 ano, String uf, String arq, String path)
         {
             List<String[]> campos = new List<String[]>();
 
@@ -86,24 +86,47 @@ namespace TSELoadCSV
             return result;
         }
 
-        public static Int32 LoadCSV<Type>(Int32 ano, String uf, String arquivo, IEnumerable<TSEMapper> map, String path)
+        public static Int32 LoadCSV<EntType>(String[][] campos, IEnumerable<TSEMapper> map, String path)
         {
-            String[][] campos = ReadCSV(2016, uf, arquivo, path);
-            Console.WriteLine(String.Format("{0}: {1:#,#}", uf, campos.Length));
+            DateTime inicio = DateTime.Now;
+            Console.WriteLine("Inicio: {0}", inicio.ToString());
 
-            foreach (String[] cmps in campos)
+            using (TSEdbContext DB = new TSEdbContext())
             {
+                foreach (String[] cmps in campos)
+                {
+                    try
+                    {
+                        String jsonString = JsonObject(cmps, map);
+                        EntType entity = JsonSerializer.Deserialize<EntType>(jsonString);
+                        DB.Set(entity.GetType()).Add(entity);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Deu merda: {0}", ex.Message);
+                        Console.ReadLine();
+                    }
+                }
+
+                DateTime meio = DateTime.Now;
+                Console.Write("Meio:   {0} ", meio.ToString());
+                TimeSpan intervalo = meio - inicio;
+                Console.WriteLine("Tempo:  {0}", intervalo.ToString());
+
                 try
                 {
-                    String jsonString = JsonObject(cmps, map);
-                    //Console.WriteLine(jsonString);
-                    Type cand = JsonSerializer.Deserialize<Type>(jsonString);
-                    //Console.WriteLine(String.Format("UF: {0}, Municipio: {1}, Nome: {2}", cand.UF, cand.Municipio, cand.Nome));
+                    DB.SaveChanges();
                 }
                 catch (Exception ex)
                 {
-
+                    Console.WriteLine("Deu merda: {0}", ex.Message);
+                    Console.ReadLine();
                 }
+
+                DateTime fim = DateTime.Now;
+                Console.Write ("Fim:    {0} ", fim.ToString());
+                intervalo = fim - inicio;
+                Console.WriteLine("Tempo:  {0}", intervalo.ToString());
             }
 
             return campos.Length;
