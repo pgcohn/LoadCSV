@@ -38,51 +38,28 @@ namespace LoadCSV
 
             using (TSEdbContext contextDB = new TSEdbContext())
             {
-                contextDB.Database.CreateIfNotExists();
+                try
+                {
+                    contextDB.Database.CreateIfNotExists();
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                    Console.ReadKey();
+                }
             }
 
             String path = @"C:\Users\Paulo\Documents\Pessoal\Projeto QMR\Eleições {0}\{2}_{0}\{2}_{0}_{1}.txt";
 
-            Int32 totCands = 0;
-            Int32 totBens = 0;
-
             DateTime inicio = DateTime.Now;
+            Console.WriteLine("Inicio Programa: {0}", inicio.ToString());
 
-            foreach(String uf in baesrj)
-            {
-                totBens = 0;
-                totCands = 0;
-
-                String[][] campos = LoadTSE.ReadCSV(2016, uf, "consulta_cand", path);
-                Console.WriteLine(String.Format("{0}: {1:#,#}", uf, campos.Length));
-                totCands += LoadTSE.LoadCSV<CandidatoBAESRJ>(campos, maps.CandidatoMap, path);
-                LoadTSE.LoadCSV<CandidaturaBAESRJ>(campos, maps.CandidaturaMap, path);
-
-                campos = LoadTSE.ReadCSV(2016, uf, "bem_candidato", path);
-                Console.WriteLine(String.Format("{0}: {1:#,#}", uf, campos.Length));
-                totBens += LoadTSE.LoadCSV<BemCandidatoBAESRJ>(campos, maps.BemCandidatoMap, path);
-
-                Console.WriteLine("Total de Candidatos: {0}", totCands.ToString("#,#"));
-                Console.WriteLine("Total de Bens: {0}", totBens.ToString("#,#"));
-            }
-
-            foreach (String uf in sul)
-            {
-                totBens = 0;
-                totCands = 0;
-
-                String[][] campos = LoadTSE.ReadCSV(2016, uf, "consulta_cand", path);
-                Console.WriteLine(String.Format("{0}: {1:#,#}", uf, campos.Length));
-                totCands += LoadTSE.LoadCSV<CandidatoS>(campos, maps.CandidatoMap, path);
-                LoadTSE.LoadCSV<CandidaturaS>(campos, maps.CandidaturaMap, path);
-
-                campos = LoadTSE.ReadCSV(2016, uf, "bem_candidato", path);
-                Console.WriteLine(String.Format("{0}: {1:#,#}", uf, campos.Length));
-                totBens += LoadTSE.LoadCSV<BemCandidatoS>(campos, maps.BemCandidatoMap, path);
-
-                Console.WriteLine("Total de Candidatos: {0}", totCands.ToString("#,#"));
-                Console.WriteLine("Total de Bens: {0}", totBens.ToString("#,#"));
-            }
+            LoadTSE.LoadCands<CandidatoS, CandidaturaS, BemCandidatoS>(sul, maps, path);
+            LoadTSE.LoadCands<CandidatoMG, CandidaturaMG, BemCandidatoMG>(mg, maps, path);
+            LoadTSE.LoadCands<CandidatoNE, CandidaturaNE, BemCandidatoNE>(nordeste, maps, path);
+            LoadTSE.LoadCands<CandidatoSP, CandidaturaSP, BemCandidatoSP>(sp, maps, path);
+            LoadTSE.LoadCands<CandidatoNCO, CandidaturaNCO, BemCandidatoNCO>(nortecentrooeste, maps, path);
+            LoadTSE.LoadCands<CandidatoBAESRJ, CandidaturaBAESRJ, BemCandidatoBAESRJ>(baesrj, maps, path);
 
             TimeSpan tempo = DateTime.Now - inicio;
             Console.WriteLine("Tempo total: {0}", tempo.ToString());

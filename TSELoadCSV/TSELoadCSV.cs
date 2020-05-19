@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using TSEdb;
@@ -85,14 +87,70 @@ namespace TSELoadCSV
 
             return result;
         }
+        
+        public static void SumValores<CnddtrType, BensType>()
+        {
+            GC.Collect();
+
+            TSEdbContext DB = new TSEdbContext();
+            {
+                IQueryable<Candidatura> cnddtrs = (IQueryable<Candidatura>)DB.Set(typeof(CnddtrType));
+                IQueryable<BemCandidato> bens = (IQueryable<BemCandidato>)DB.Set(typeof(BensType));
+
+                var valores = (from bem in bens
+                        group bem by bem.BemSeqCand into bensCand
+                        select new
+                        {
+                            Cand = bensCand.Key,
+                            Bens = bensCand.Sum(b => b.BemCandValor)
+                        }).ToList();
+
+                int i = 0;
+                foreach(var valor in valores)
+                {
+                    Candidatura cnddtr = cnddtrs.First(c=>c.SeqCand.Equals(valor.Cand));
+                    cnddtr.TotBensValor = valor.Bens;
+                    if (++i % 100 == 0)
+                    {
+                        try
+                        {
+                            Console.Write(".");
+                            DB.SaveChanges();
+                            DB.Dispose();
+                            DB = new TSEdbContext();
+                            cnddtrs = (IQueryable<Candidatura>)DB.Set(typeof(CnddtrType));
+                            bens = (IQueryable<BemCandidato>)DB.Set(typeof(BensType));
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Deu merda: {0}", ex.Message);
+                            Console.ReadLine();
+                        }
+                    }
+                }
+
+                try
+                {
+                    Console.WriteLine();
+                    DB.SaveChanges();
+                    DB.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                }
+            }
+        }
 
         public static Int32 LoadCSV<EntType>(String[][] campos, IEnumerable<TSEMapper> map, String path)
         {
-            DateTime inicio = DateTime.Now;
-            Console.WriteLine("Inicio: {0}", inicio.ToString());
+            GC.Collect();
 
-            using (TSEdbContext DB = new TSEdbContext())
+            DateTime inicio = DateTime.Now;
+
+            TSEdbContext DB = new TSEdbContext();
             {
+                int i = 0;
                 foreach (String[] cmps in campos)
                 {
                     try
@@ -100,6 +158,21 @@ namespace TSELoadCSV
                         String jsonString = JsonObject(cmps, map);
                         EntType entity = JsonSerializer.Deserialize<EntType>(jsonString);
                         DB.Set(entity.GetType()).Add(entity);
+                        if (++i % 100 == 0)
+                        {
+                            //Console.Write(".");
+                            try
+                            {
+                                DB.SaveChanges();
+                                DB.Dispose();
+                                DB = new TSEdbContext();
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine("Deu merda: {0}", ex.Message);
+                                Console.ReadLine();
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -108,14 +181,10 @@ namespace TSELoadCSV
                     }
                 }
 
-                DateTime meio = DateTime.Now;
-                Console.Write("Meio:   {0} ", meio.ToString());
-                TimeSpan intervalo = meio - inicio;
-                Console.WriteLine("Tempo:  {0}", intervalo.ToString());
-
                 try
                 {
                     DB.SaveChanges();
+                    DB.Dispose();
                 }
                 catch (Exception ex)
                 {
@@ -124,12 +193,34 @@ namespace TSELoadCSV
                 }
 
                 DateTime fim = DateTime.Now;
-                Console.Write ("Fim:    {0} ", fim.ToString());
-                intervalo = fim - inicio;
-                Console.WriteLine("Tempo:  {0}", intervalo.ToString());
+                TimeSpan intervalo = fim - inicio;
+                Console.Write("Tempo:  {0} ", intervalo.ToString());
             }
 
             return campos.Length;
+        }
+
+        public static void LoadCands<Cand, Cnddtr, Bens>(String[] regiao, Maps maps, String path)
+        {
+            int totBens = 0;
+            int totCands = 0;
+
+            foreach (String uf in regiao)
+            {
+                String[][] campos = LoadTSE.ReadCSV(2016, uf, "consulta_cand", path);
+                Console.Write(String.Format(Environment.NewLine + "Cnds {0}: {1:#,#} ", uf, campos.Length));
+                totCands += LoadTSE.LoadCSV<Cand>(campos, maps.CandidatoMap, path);
+                LoadTSE.LoadCSV<Cnddtr>(campos, maps.CandidaturaMap, path);
+
+                campos = LoadTSE.ReadCSV(2016, uf, "bem_candidato", path);
+                Console.Write(String.Format(Environment.NewLine + "Bens {0}: {1:#,#} ", uf, campos.Length));
+                totBens += LoadTSE.LoadCSV<Bens>(campos, maps.BemCandidatoMap, path);
+            }
+
+            Console.WriteLine(Environment.NewLine + "Total de Candidatos: {0}", totCands.ToString("#,#"));
+            Console.WriteLine("Total de Bens: {0}" + Environment.NewLine, totBens.ToString("#,#"));
+
+            LoadTSE.SumValores<Cnddtr, Bens>();
         }
     }
 }
